@@ -1,0 +1,146 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{biblatex}
+\addbibresource{friends.bib}
+
+\title{A Decentralized Backstop Liquidity Protocol}
+\author{Yaron Velner}
+\date{March 2020}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Decentralized lending platform, e.g., Compound, dydx, and Aave, are gaining wide popularity in the recent year, but suffer from two major drawbacks:
+\begin{itemize}
+    \item Significant spread between the interest rate given to lenders and the interest rate borrowers pay.
+    \item Big part of the lending protocol \emph{value} is taken by the underlying blockchain miners due to so called \emph{gas wars} between \emph{liquidators} who undertake borrowers under-collateralized debt.
+\end{itemize}
+In this manuscript, we introduce a \emph{backstop protocol}, where \emph{backstop liquidity providers} (BLP) buy their right to liquidate under-collateralized loans. In this protocol borrowers and lenders share the BLP payments in addition to the usual interest rate on their loan.
+
+The proposed mechanism eliminates the need for gas wars between liquidators, and thus transfer big part of the protocol value back to the borrowers and lenders, which in turn improves the effective interest rate spread.
+
+We show how to build the protocol around existing lending platforms, without any change on their side, and without compromising on the guarantees they provide to the user.
+This give rise to an improved system where user get better yield, BLP get more certainty on their revenue stream, and lending platform achieve more security in the liquidation process. 
+\end{abstract}
+
+\section{Introduction and Background}
+In this section, we provide necessary background on lending platforms and survey current decentralized and centralized crypto lending platforms.
+In Section~\ref{sec:FP} we present the Backstop Liquidity Protocol (BLP) and analyze its advantages and disadvantages over current platforms.
+In Section~\ref{sec:boot} we show how to build the protocol around existing lending platforms, while backstop liquidity provider (BLPs) still enjoy higher priority in liquidating those users.   
+Finally, in Section~\ref{sec:beyond} we investigate how BLP can benefit other DeFi platforms, e.g., decentralized exchanges stable coins, and other synthetic assets.
+
+
+
+\noindent\textbf{Lending platform} Following Compound~\cite{compound} notations, users can \emph{supply} (deposit) and \emph{borrow} (withdraw) assets to/from the platform.
+User supplied assets are used as a \emph{collateral} and allows him to borrow from the platform.
+Users gain interest on their collateral and pay interest on their debt.
+Given a collateral factor $f$, which may vary according to the underlying collateral asset), a user with \emph{collateral value} of $cv$ has a \emph{borrowing capacity} of $\frac{cv}{f}$, that is, his debt to the system must not exceed $\frac{cv}{f}$.
+For a user $u$, we denote the user collateral with $u_c$ and its debt with $u_d$. A user debt is \emph{bad} if $u_c < u_d$.
+A lending platform is \emph{solvent} when the sum of bad debts does not exceed the platform \emph{insurance fund} (e.g., if the insurance fund is empty and none of the users have bad debt).
+In order to maintain the platform solvency, it \emph{liquidates} users who exceed their borrowing capacity.
+Liquidation of user $u$ is taking place when a \emph{liquidator} is paying $u$'s debt, with the same underlying assets as the original debt, and in return get possession on $u$'s collateral (or on parts of it).  
+
+\noindent\textbf{Lending platforms in DeFi}
+Lending platform with liquidation mechanism resides in the core of almost all prominent DeFi protocols~\cite{defiPulse}.
+In addition to pure lending protocols like compound~\cite{compound}, lending is also used for margin trade~\cite{dydx}, stable coins~\cite{daiv2}, and synthetic assets~\cite{synthetix}.
+In most of the platforms~\cite{compound,dydx,sai}, the liquidation is done by giving the liquidator the borrower's collateral at discount price, and the liquidator is the first Ethereum account to call a liquidation function in the platform's smart contract.
+This approach give rise to \emph{gas price wars} where Ethereum accounts compete on who will give the highest gas price for the liquidation transaction, in order to get higher priority among miners who decide the order of transactions.
+As a result, great value is shifted away from the platform users (i.e., borrowers and lenders) to the Ethereum miners, and to blockchain developers who craft sophisticated optimizations to increase the likelihood of winning and reduce the cost of a loss.
+
+\noindent\textbf{Backstop protocols in traditional (centralized) exchanges}
+Centralized futures and options crypto exchanges like Derribit, Bitmex, Kraken, and FTX handle liquidations in the following way~\cite{ftx,kraken}:
+\begin{enumerate}
+    \item In small liquidations and normal market conditions the platform simply bid the borrower's collateral in the platform order-book.
+    \item Backstop liquidity provider program: In this scheme, liquidity providers are committed to hold certain balance in the exchange, and upon liquidations their balance is used to buy the bankrupted account collateral, at a discount over market price.
+\end{enumerate}
+Having backstop liquidity provider (BLP) allow the exchange to relax its collateral requirements and allow better leverage, and their role is essential to maintain large scale solvent platform.
+However, it should be noted that the BLP's profits come on the expense of the users, who could otherwise enjoy lower liquidation penalty and/or lower interest (funding) rates.
+Hence, it is the role of the exchange operator to balance that trade-off and determine the appropriate discount levels. 
+
+\section{Backstop Liquidity Protocol}\label{sec:FP}
+The backstop liquidity protocol follows the traditional exchanges approach but aims to make it more transparent and decentralized in the way BLPs share their profits with the other platform users.
+The protocol consist of two parts, namely, \emph{BLP franchises}, and \emph{user rating}.
+The first part determines how BLPs are chosen, and the second part is a decentralized mechanism that builds on crypto-economic incentive and market forces in order to balance the trade-off between BLPs profits and the other users profits.
+
+\noindent\textbf{User rating}
+In our scheme, lenders and borrowers increase their rating in the following way:
+\begin{itemize}
+    \item Lenders rating is increased proportionally to the interest payments they receive. For example, if Alice received \$300 interest on her deposit in the last month, and Bob received \$150, then Alice will receive twice the amount of rating that Bob will receive. Meaning that for the same asset class, a bigger deposit will result in bigger rating increase. 
+    \item Borrowers increase their rating proportionally to the interest payments they pay. Meaning that for a given asset class, a bigger debt will result in bigger rating increase.
+\end{itemize}
+
+\noindent\textbf{BLP franchise}
+In our scheme, BLPs pay to get a priority in the liquidation process.
+More formally, at the beginning of every month potential BLPs bid for \emph{BLP franchise}, by promising the best profit sharing scheme and/or payment to the platform users.
+Upon every liquidation, 5 franchises owner are chosen at random, and has certain time duration to execute the liquidation, i.e., to take the bankrupted borrower's collateral in return to its underlying debt at a discount rate.
+If the chosen franchise owner fails, or knowingly decides not to execute the liquidation, then the liquidation could be executed by any Ethereum account (franchise owner or not) just like in the current DeFi platforms.
+
+
+Combining the two parts together, we get a market-force-driven mechanism to share the liquidation profits among the users and the BLPs.
+Indeed, the higher the BLP profits are, the higher they will be paying to bid for the franchise rights, which in turn effectively increase the lenders received interest and decrease the borrowers paid interest.
+Hence, we believe that in the long run an equilibrium will be formed around the point where (i)~BLP profits reflect the minimum liquidation penalty that is required to keep the system solvent; and~(ii) all surplus profit, which in current DeFi platforms goes to the blockchain miners, will go to the users of the platform.
+
+\section{Backstop protocol atop existing lending platforms}\label{sec:boot}
+Backstop protocol aims to integrate as a \emph{second layer liquidations solution} for existing platforms, without any change from their side.
+In such integration the underlying lending platform security guarantees remain, as not change was done from its side, but the platform users get more and the platform itself enjoys better security towards future liquidations.
+
+For the sake of simplicity we give one lending platform as an example, namely, the compound protocol.
+
+The backstop liquidity protocol will provide an interface for users to lend and borrow via compound. Lenders will get their user rating based on their deposits and the usual interest rate from compound, while borrowers will not get any rating due to technical difficulties~\footnote{A single user can be both borrower and lender. In fact to become a borrower he must also be lender, i.e., to deposit a collateral.}.
+As we described in Section~\ref{sec:FP}, BLPs bid for \emph{BLP franchise}, which give them a priority in liquidation of the backstop liquidity protocol users debt.
+The priority can be achieved in two ways, we first describe a naive approach which change the user interaction with the compound protocol, and then we present the seamless approach that allows the user to interact with our protocol in exactly the same way he would have interact with compound (and in addition benefit more due to his user rating).
+
+\noindent\textbf{Naive approach}
+Priority is achieved by tightening compound collateral factor by 3\% (i.e., we effectively increase the users margin requirements by 3\%).
+As a result, user debt will become unsafe in our platform before it becomes unsafe in the compound platform, and therefore only our platform's BLPs would be able to liquidate it.
+From the user side, the interaction is almost identical to how regular users interact with compound.
+The downside of this approach is stricter collateral requirements for the users. However, the users are compensated for it by sharing the BLP revenues, which they would not get by interacting directly with compound.
+
+In this approach users enjoy the liquidity and tight interest spread of the existing compound platform while earning extra by giving BLPs priority in liquidation of their collateral.
+In addition, the solvency of the system is guaranteed and taking care of by the compound platform, which take care of the liquidations that are not handled by our protocol BLPs.
+
+\noindent\textbf{The seamless approach}
+Users deposits and borrows will be forwarded to compound, and they will get the same interest on their collateral and their rating will increase.
+
+BLPs get a priority by providing a \emph{cushion} to the user debt, i.e., repaying part of the user borrow to compound, when the user managed assets are getting close to their liquidation price.
+As a result in compound itself the recorded user debt is lower than the one on backstop protocol, and thus the BLPs with the franchise get a priority over compound's liquidators.
+
+We illustrate this approach with the following example:
+\begin{example}
+We describe a scenario where Alice wants to deposit 1 ETH and borrow 100 DAI, and ETH price drops to a level of \$130 per 1 ETH.
+\begin{itemize}
+    \item 1 ETH = \$300
+    \item Alice deposit 1 ETH to backstop protocol, and this 1 ETH is supplied to compound on behalf of Alice's \emph{smart contract avatar}.
+    \item Alice ask backstop protocol to borrow 100 DAI. Backstop protocol borrows the 100 DAI with Alice's avatar and sends it to Alice. At this point Alice's liquidation price is 1 ETH = \$130.
+    \item ETH price goes down to 1 ETH = \$135.
+    \item BLPs provide their cushion by paying 10 DAI of Alice's borrow into compound via Alice's avatar. Now Alice's liquidation price on compound is \$125.
+    \item ETH price goes down to \$129.
+    \item Backstop's BLPs liquidate Alice's debt by interacting with her avatar.
+\end{itemize}
+\end{example}
+
+\section{Backstop as a DeFi primitive}\label{sec:beyond}
+At time of writing, over \$0.5B are locked in DeFi protocols who relies on functioning liquidation mechanism to remain solvent.
+At present they all rely on anonymous liquidators, and there is very little certainty on how these anonymous players will function under extreme market conditions.
+The latest crash in Ethereum price that started at March 9th demonstrated how this approach failed to operate under stress~\cite{longhash}, where the makerdao platform incurred over \$4M debt.
+
+Being fully anonymous, the liquidators need not commit to anything, and it is very hard to get their feedback on collateral requirements and liquidation incentives.
+This leads to great uncertainty on how these DeFi platforms will function under stress, different collateral requirements across platforms ,and relatively high liquidation incentives.
+
+Given backstop is an imperative component in all major DeFi platforms, from stable coins, to margin trade platforms and synthetic assets, we believe such primitive is essential for the DeFi ecosystem to be able to expand.
+
+Our proposed protocol is a first step in building a community of liquidators around the backstop DeFi primitive.
+
+\section{Conclusion and Future Work}\label{sec:conc}
+In this manuscript, we described the role of liquidators in lending platforms, described a novel backstop liquidity protocol which shift the surplus of liquidators profits form Ethereum miners to the lending platform users, and described how to bootstrap such protocol by building it over existing lending platforms such as compound, makerdao, dydx and others.
+We leave it to future work to explore a possible token economy of the protocol, and how to formally define the backstop DeFi primitive.
+
+Lending platforms in the DeFi ecosystem have additional pitfalls, most notably, the \emph{oracle problem} which typically requires a centralized oracle system to determine underlying asset prices.
+This problem is not handled by this manuscript, and it is a subject to future research to see if the backstop liquidity protocol can help in mitigating it.
+
+\printbibliography
+
+\end{document}
+
